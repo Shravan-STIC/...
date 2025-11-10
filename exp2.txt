@@ -1,0 +1,22 @@
+#include <reg51.h> 
+void T1M1delay(void);  
+void main(void){
+    	while(1){ 
+        	P0 = 0x55;     
+        	T1M1delay();   
+       	P0 = 0xAA;     
+        	T1M1delay();   
+    	}
+}
+void T1M1delay(void){
+    	unsigned char z;
+    	for(z = 0; z < 50; z++){
+        	TMOD = 0x10;   
+        	TH1 = 0xA5;    
+        	TL1 = 0x00;    
+        	TR1 = 1;       
+        	while (TF1 == 0); 
+        	TR1 = 0;       
+        	TF1 = 0;       
+    	}
+}

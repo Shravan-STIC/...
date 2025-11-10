@@ -1,0 +1,98 @@
+#include <xc.h>
+#pragma config OSC = HS
+#pragma config WDT = OFF
+#pragma config LVP = OFF
+#pragma config PBADEN = OFF
+#define LCD_DATA PORTD
+#define rs PORTEbits.RE0
+#define rw PORTEbits.RE1
+#define en PORTEbits.RE2
+void msdelay(unsigned int);
+void init_LCD(void);
+void LCD_command(unsigned char);
+void LCD_data(unsigned char);
+void LCD_write_string(char *str);
+void ADC_Init(void);
+void Start_Conversion(void);
+unsigned int Get_ADC_Result(void);
+void main(void){
+    	char msg1[] = "On-chip ADC Prog.";
+char msg2[] = "ADC VOLT:";
+unsigned int adc_val;
+unsigned long voltage;
+unsigned char thousands, hundreds, tens, ones;
+ADCON1 = 0x0F; 
+TRISD = 0x00;  
+TRISE = 0x00;  
+ADC_Init();
+init_LCD();
+LCD_write_string(msg1);
+msdelay(1000);
+LCD_command(0x01); 
+LCD_write_string(msg2); 
+while(1){
+        	Start_Conversion();
+        	adc_val = Get_ADC_Result();
+voltage = ((unsigned long)adc_val * 5000) / 1023;
+       	LCD_command(0xC9); 
+        	thousands = (voltage / 1000) % 10;
+        	hundreds = (voltage / 100) % 10;
+        	tens = (voltage / 10) % 10;
+        	ones = voltage % 10;
+        	LCD_data(thousands + '0');
+        	LCD_data('.');
+        	LCD_data(hundreds + '0');
+        	LCD_data(tens + '0');
+        	LCD_data(ones + '0');
+        	msdelay(500);
+   	}
+}
+void ADC_Init(void){
+   	ADCON0 = 0x01;       
+    	ADCON1 = 0x0E;       
+    	ADCON2 = 0b10001110; 
+}
+void Start_Conversion(void){
+   	 ADCON0bits.GO = 1;
+}
+unsigned int Get_ADC_Result(void){
+    	while(ADCON0bits.GO); 
+return ((ADRESH << 8) + ADRESL);
+}
+void msdelay(unsigned int time){
+   	unsigned int i, j;
+    	for(i = 0; i < time; i++)
+        	for(j = 0; j < 710; j++);
+}
+void init_LCD(void){
+    	LCD_command(0x38);
+msdelay(15);
+    	LCD_command(0x01); 
+    	msdelay(15);
+    	LCD_command(0x0C); 
+    	msdelay(15);
+    	LCD_command(0x80); 
+    	msdelay(15);	
+}
+void LCD_command(unsigned char cmd){
+   	LCD_DATA = cmd;
+    	rs = 0;
+    	rw = 0;
+    	en = 1;
+    	msdelay(2);
+    	en = 0;
+}
+void LCD_data(unsigned char data){
+    	LCD_DATA = data;
+    	rs = 1;
+    	rw = 0;
+    	en = 1;
+   	msdelay(2);
+    	en = 0;
+}
+void LCD_write_string(char *str){
+while(*str){
+LCD_data(*str);
+        	str++;
+    	}
+}
